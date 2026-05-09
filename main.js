@@ -64,6 +64,12 @@ module.exports = class MealPlannerCalendarPlugin extends Plugin {
     await this.saveData(this.settings);
   }
 
+  getPluginDir() {
+    const plugins = this.app.plugins?.plugins || {};
+    const loadedDir = Object.keys(plugins).find((dir) => plugins[dir] === this);
+    return loadedDir || this.manifest.dir || this.manifest.id;
+  }
+
   async checkForStableReleaseUpdate({ install = false } = {}) {
     try {
       const release = await fetchLatestRelease();
@@ -82,10 +88,13 @@ module.exports = class MealPlannerCalendarPlugin extends Plugin {
 
       new Notice(`Installing Meal Planner ${remoteVersion}...`);
       const files = await downloadReleaseFiles(release.tag_name, remoteVersion);
-      const pluginDir = `${this.app.vault.configDir}/plugins/${this.manifest.dir || this.manifest.id}`;
+      const pluginDir = `${this.app.vault.configDir}/plugins/${this.getPluginDir()}`;
 
       await Promise.all(RELEASE_FILES.map((file) => {
-        return this.app.vault.adapter.write(`${pluginDir}/${file}`, files[file]);
+        const path = `${pluginDir}/${file}`;
+        return this.app.vault.adapter.write(path, files[file]).catch((error) => {
+          throw new Error(`Could not write ${path}: ${error.message || error}`);
+        });
       }));
 
       new Notice(`Installed Meal Planner ${remoteVersion}. Reload Obsidian to finish updating.`, 10000);
