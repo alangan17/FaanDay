@@ -21,7 +21,26 @@
 }
 
 .mp-toolbar-wrap {
+  column-gap: 10px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 10px;
+}
+
+.mp-toolbar-control {
+  align-items: center;
+  background: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 9px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 3px;
+}
+
+.mp-toolbar-control-wide {
+  flex: 1 1 100%;
   justify-content: flex-end;
 }
 
@@ -47,7 +66,8 @@
 }
 
 .mp-button {
-  padding: 0 10px;
+  border-radius: 6px;
+  padding: 0 9px;
 }
 
 .mp-icon-button {
@@ -74,8 +94,8 @@
   border: 0;
   border-right: 1px solid var(--background-modifier-border);
   border-radius: 0;
-  min-width: 72px;
-  padding: 0 9px;
+  min-width: 68px;
+  padding: 0 8px;
 }
 
 .mp-segmented button:last-child {
@@ -190,8 +210,10 @@
 
 .mp-day.is-drop-target,
 .mp-meal.is-drop-target,
+.mp-entry.is-drop-target,
 .mp-empty-meal-drop.is-drop-target {
-  border-color: var(--interactive-accent);
+  outline: 1px solid var(--interactive-accent);
+  outline-offset: -1px;
   box-shadow: inset 0 0 0 1px var(--interactive-accent);
 }
 
@@ -211,7 +233,6 @@
 }
 
 .mp-entry-has-image .mp-icon-button,
-.mp-entry-has-image .mp-drag-handle,
 .mp-entry-has-image .mp-meal-badge {
   background: rgba(0, 0, 0, 0.42);
   border-color: rgba(255, 255, 255, 0.3);
@@ -232,7 +253,15 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px 8px;
+  justify-content: flex-end;
+}
+
+.mp-plan-transfer {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 6px;
 }
 
 .mp-date-control,
@@ -398,28 +427,6 @@
   text-decoration: none;
 }
 
-.mp-drag-handle {
-  align-items: center;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: var(--text-muted);
-  cursor: grab;
-  display: inline-flex;
-  flex: 0 0 24px;
-  height: 24px;
-  justify-content: center;
-  width: 24px;
-}
-
-.mp-drag-handle:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
-}
-
-.mp-entry.is-dragging .mp-drag-handle {
-  cursor: grabbing;
-}
-
 .mp-month .mp-recipe-link {
   word-break: keep-all;
 }
@@ -498,6 +505,43 @@
   padding: 10px 0;
 }
 
+.mp-transfer-textarea {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: var(--text-normal);
+  display: block;
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  line-height: 1.45;
+  min-height: 280px;
+  padding: 10px;
+  resize: vertical;
+  width: 100%;
+}
+
+.mp-transfer-summary {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 2px 0 8px;
+}
+
+.mp-import-preview {
+  margin-top: 10px;
+}
+
+.mp-import-warnings {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--text-warning);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 8px;
+  padding: 8px 10px;
+}
+
 .mp-selected-recipe {
   color: var(--text-muted);
   font-size: 12px;
@@ -571,6 +615,15 @@
 
   .mp-toolbar-wrap {
     justify-content: flex-start;
+  }
+
+  .mp-toolbar-control-wide,
+  .mp-shopping-controls {
+    justify-content: flex-start;
+  }
+
+  .mp-toolbar-control-wide {
+    flex-basis: auto;
   }
 
   .mp-shopping-summary,

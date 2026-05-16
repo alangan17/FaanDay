@@ -273,28 +273,51 @@ class MealPlannerView extends ItemView {
     toolbar.createDiv({ cls: "mp-title", text: this.titleForCursor() });
 
     const right = toolbar.createDiv({ cls: "mp-toolbar-group mp-toolbar-wrap" });
-    this.segmented(right, ["calendar", "shopping"], this.primaryMode, (value) => {
+    const primaryControls = this.toolbarControlGroup(right);
+    this.segmented(primaryControls, ["calendar", "shopping"], this.primaryMode, (value) => {
       this.primaryMode = value;
       if (value === "shopping") this.syncShoppingRangeToCalendar();
       this.render();
     });
+    this.renderPlanTransferButtons(this.toolbarControlGroup(right));
 
     if (this.primaryMode === "shopping") {
-      this.renderShoppingControls(right);
+      this.renderShoppingControls(this.toolbarControlGroup(right, "mp-toolbar-control-wide"));
       return;
     }
 
-    this.segmented(right, ["month", "week", "day"], this.viewMode, (value) => {
+    const viewControls = this.toolbarControlGroup(right);
+    this.segmented(viewControls, ["month", "week", "day"], this.viewMode, (value) => {
       this.viewMode = value;
       this.render();
     });
-    this.segmented(right, ["recipe", "ingredients", "nutrition"], this.detailMode, (value) => {
+    const detailControls = this.toolbarControlGroup(right);
+    this.segmented(detailControls, ["recipe", "ingredients", "nutrition"], this.detailMode, (value) => {
       this.detailMode = value;
       this.render();
     });
-    this.segmented(right, ["meals", "all day"], this.groupMode, (value) => {
+    const groupControls = this.toolbarControlGroup(right);
+    this.segmented(groupControls, ["meals", "all day"], this.groupMode, (value) => {
       this.groupMode = value;
       this.render();
+    });
+  }
+
+  toolbarControlGroup(parent, cls = "") {
+    return parent.createDiv({ cls: `mp-toolbar-control ${cls}`.trim() });
+  }
+
+  renderPlanTransferButtons(parent) {
+    const actions = parent.createDiv({ cls: "mp-plan-transfer" });
+    actions.createEl("button", { cls: "mp-button", text: "Import" }, (button) => {
+      button.addEventListener("click", () => {
+        new MealPlanImportModal(this.app, this).open();
+      });
+    });
+    actions.createEl("button", { cls: "mp-button", text: "Export" }, (button) => {
+      button.addEventListener("click", () => {
+        new MealPlanExportModal(this.app, this).open();
+      });
     });
   }
 
@@ -533,8 +556,8 @@ class MealPlannerView extends ItemView {
     const recipe = this.recipeCache.find((item) => item.path === entry.path);
     const card = section.createDiv({ cls: "mp-entry" });
     this.entryDragSource(card, dayKey, mealName, index);
+    this.entryDropTarget(card, dayKey, mealName, index);
     const row = card.createDiv({ cls: "mp-entry-row" });
-    this.entryDragHandle(row, card, dayKey, mealName, index);
     if (options.showMealLabel) {
       row.createSpan({ cls: "mp-meal-badge", text: mealName });
     }
@@ -795,6 +818,59 @@ class MealPlannerView extends ItemView {
     return entries;
   }
 
+  selectedMealPlanRange() {
+    if (this.primaryMode === "shopping") {
+      return {
+        fromKey: this.shoppingFromDate,
+        toKey: this.shoppingToDate,
+        label: "selected shopping range",
+      };
+    }
+
+    const days = this.daysForView();
+    return {
+      fromKey: formatDateKey(days[0]),
+      toKey: formatDateKey(days[days.length - 1]),
+      label: `${this.viewMode} view`,
+    };
+  }
+
+  async importMealPlan(parsed, mode) {
+    if (!parsed.entries.length) {
+      new Notice("No meal plan entries found.");
+      return false;
+    }
+    if (!isDateKey(parsed.fromKey) || !isDateKey(parsed.toKey) || parsed.fromKey > parsed.toKey) {
+      new Notice("Imported date range is invalid.");
+      return false;
+    }
+
+    const plans = this.plugin.settings.plans;
+    if (mode === "replace") {
+      rangeDateKeys(parsed.fromKey, parsed.toKey).forEach((dayKey) => {
+        delete plans[dayKey];
+      });
+    }
+
+    let imported = 0;
+    let skipped = 0;
+    parsed.entries.forEach(({ dayKey, mealName, entry }) => {
+      if (!plans[dayKey]) plans[dayKey] = {};
+      if (!plans[dayKey][mealName]) plans[dayKey][mealName] = [];
+      if (mode === "merge" && plans[dayKey][mealName].some((existing) => mealPlanEntriesMatch(existing, entry))) {
+        skipped += 1;
+        return;
+      }
+      plans[dayKey][mealName].push(cloneEntry(entry));
+      imported += 1;
+    });
+
+    await this.plugin.saveSettings();
+    await this.render();
+    new Notice(`Imported ${imported} recipe${imported === 1 ? "" : "s"}${skipped ? `, skipped ${skipped} duplicate${skipped === 1 ? "" : "s"}` : ""}.`);
+    return true;
+  }
+
   metadataForIngredient(name) {
     const file = this.resolveIngredientFile(name);
     return file ? this.metaForFile(file) : {};
@@ -889,14 +965,10 @@ class MealPlannerView extends ItemView {
     await this.render();
   }
 
-  async transferEntry(sourceDayKey, sourceMealName, sourceIndex, targetDayKey, targetMealName, mode) {
+  async transferEntry(sourceDayKey, sourceMealName, sourceIndex, targetDayKey, targetMealName, mode, targetIndex = null) {
     const finalMealName = String(targetMealName || sourceMealName || "").trim();
     if (!finalMealName) {
       new Notice("Choose a meal.");
-      return false;
-    }
-    if (mode === "move" && sourceDayKey === targetDayKey && sourceMealName === finalMealName) {
-      new Notice("Recipe is already in that meal.");
       return false;
     }
 
@@ -911,16 +983,32 @@ class MealPlannerView extends ItemView {
     const plans = this.plugin.settings.plans;
     if (!plans[targetDayKey]) plans[targetDayKey] = {};
     if (!plans[targetDayKey][finalMealName]) plans[targetDayKey][finalMealName] = [];
-    plans[targetDayKey][finalMealName].push(cloneEntry(sourceEntry));
+    const targetEntries = plans[targetDayKey][finalMealName];
+    const isSameMeal = sourceDayKey === targetDayKey && sourceMealName === finalMealName;
+    const requestedIndex = Number.isInteger(targetIndex) ? targetIndex : targetEntries.length;
 
-    if (mode === "move") {
-      sourceEntries.splice(sourceIndex, 1);
-      this.cleanupEmptyPlan(sourceDayKey, sourceMealName);
+    if (mode === "copy") {
+      targetEntries.splice(clampIndex(requestedIndex, targetEntries.length), 0, cloneEntry(sourceEntry));
+      await this.plugin.saveSettings();
+      await this.render();
+      new Notice("Recipe copied.");
+      return true;
     }
+
+    if (isSameMeal && (requestedIndex === sourceIndex || requestedIndex === sourceIndex + 1)) {
+      return false;
+    }
+
+    const [movedEntry] = sourceEntries.splice(sourceIndex, 1);
+    let insertIndex = requestedIndex;
+    if (isSameMeal && insertIndex > sourceIndex) insertIndex -= 1;
+    targetEntries.splice(clampIndex(insertIndex, targetEntries.length), 0, movedEntry);
+
+    this.cleanupEmptyPlan(sourceDayKey, sourceMealName);
 
     await this.plugin.saveSettings();
     await this.render();
-    new Notice(mode === "move" ? "Recipe moved." : "Recipe copied.");
+    new Notice("Recipe moved.");
     return true;
   }
 
@@ -1118,21 +1206,6 @@ class MealPlannerView extends ItemView {
     });
   }
 
-  entryDragHandle(parent, card, dayKey, mealName, index) {
-    const handle = parent.createEl("span", {
-      cls: "mp-drag-handle",
-      attr: { "aria-label": "Drag recipe", draggable: "true", title: "Drag recipe" },
-    });
-    setIcon(handle, "grip-vertical");
-    handle.draggable = true;
-    handle.addEventListener("dragstart", (event) => {
-      this.startEntryDrag(event, card, dayKey, mealName, index);
-    });
-    handle.addEventListener("dragend", () => {
-      this.endEntryDrag(card);
-    });
-  }
-
   startEntryDrag(event, card, dayKey, mealName, index) {
     event.stopPropagation();
     this.dragPayload = { dayKey, mealName, index };
@@ -1153,7 +1226,7 @@ class MealPlannerView extends ItemView {
     this.dragPayload = null;
   }
 
-  entryDropTarget(target, dayKey, mealName) {
+  entryDropTarget(target, dayKey, mealName, targetIndex = null) {
     target.addEventListener("dragover", (event) => {
       if (!this.draggedEntryPayload(event)) return;
       event.preventDefault();
@@ -1170,8 +1243,16 @@ class MealPlannerView extends ItemView {
       event.stopPropagation();
       target.removeClass("is-drop-target");
       this.containerEl.removeClass("mp-dragging-entry");
-      await this.transferEntry(payload.dayKey, payload.mealName, payload.index, dayKey, mealName || payload.mealName, "move");
+      const insertIndex = Number.isInteger(targetIndex)
+        ? this.dropInsertIndex(event, target, targetIndex)
+        : null;
+      await this.transferEntry(payload.dayKey, payload.mealName, payload.index, dayKey, mealName || payload.mealName, "move", insertIndex);
     });
+  }
+
+  dropInsertIndex(event, target, targetIndex) {
+    const rect = target.getBoundingClientRect();
+    return event.clientY > rect.top + rect.height / 2 ? targetIndex + 1 : targetIndex;
   }
 
   draggedEntryPayload(event) {
@@ -1226,6 +1307,156 @@ class MealPlannerView extends ItemView {
       });
       menu.showAtMouseEvent(event);
     });
+  }
+}
+
+class MealPlanExportModal extends Modal {
+  constructor(app, view) {
+    super(app);
+    this.view = view;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    const range = this.view.selectedMealPlanRange();
+
+    contentEl.addClass("mp-modal");
+    contentEl.createEl("h2", { text: "Export meal plan" });
+    contentEl.createDiv({
+      cls: "mp-transfer-summary",
+      text: `${range.fromKey} to ${range.toKey} (${range.label})`,
+    });
+
+    if (!isDateKey(range.fromKey) || !isDateKey(range.toKey) || range.fromKey > range.toKey) {
+      contentEl.createDiv({ cls: "mp-warning", text: "Choose a valid date range before exporting." });
+      return;
+    }
+
+    const text = formatMealPlanText(this.view.plugin.settings.plans, this.view.recipeCache, range.fromKey, range.toKey);
+    const textarea = contentEl.createEl("textarea", { cls: "mp-transfer-textarea" });
+    textarea.value = text;
+    textarea.addEventListener("focus", () => textarea.select());
+
+    new Setting(contentEl)
+      .addButton((button) => {
+        button.setButtonText("Copy");
+        button.setCta();
+        button.onClick(async () => {
+          try {
+            await copyTextToClipboard(text);
+            new Notice("Meal plan copied.");
+          } catch (error) {
+            textarea.focus();
+            textarea.select();
+            new Notice("Could not copy automatically. Select the text and copy it.");
+          }
+        });
+      })
+      .addButton((button) => {
+        button.setButtonText("Close");
+        button.onClick(() => this.close());
+      });
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}
+
+class MealPlanImportModal extends Modal {
+  constructor(app, view) {
+    super(app);
+    this.view = view;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    let mode = "merge";
+    let parsed = parseMealPlanText("", this.view.recipeCache, this.view.plugin.settings.defaultMeals);
+
+    contentEl.addClass("mp-modal");
+    contentEl.createEl("h2", { text: "Import meal plan" });
+
+    new Setting(contentEl)
+      .setName("Mode")
+      .addDropdown((dropdown) => {
+        dropdown.addOption("merge", "Merge");
+        dropdown.addOption("replace", "Replace date range");
+        dropdown.setValue(mode);
+        dropdown.onChange((value) => {
+          mode = value;
+          renderPreview();
+        });
+      });
+
+    const textarea = contentEl.createEl("textarea", { cls: "mp-transfer-textarea" });
+    textarea.placeholder = [
+      "Meal Plan: 2026-05-18 to 2026-05-24",
+      "",
+      "2026-05-18 Mon",
+      "Breakfast",
+      "- Oatmeal",
+      "Dinner",
+      "- Salmon Pasta (servings: 2)",
+    ].join("\n");
+
+    const preview = contentEl.createDiv({ cls: "mp-import-preview" });
+    const renderPreview = () => {
+      parsed = parseMealPlanText(textarea.value, this.view.recipeCache, this.view.plugin.settings.defaultMeals);
+      preview.empty();
+      if (!textarea.value.trim()) {
+        preview.createDiv({ cls: "mp-transfer-summary", text: "Paste exported meal plan text above." });
+        return;
+      }
+
+      if (!parsed.entries.length) {
+        preview.createDiv({ cls: "mp-warning", text: "No importable recipe lines found." });
+      } else {
+        const replaceNote = mode === "replace" ? " Existing plans in this range will be cleared first." : "";
+        preview.createDiv({
+          cls: "mp-transfer-summary",
+          text: `${parsed.entries.length} recipe${parsed.entries.length === 1 ? "" : "s"} across ${parsed.dayCount} day${parsed.dayCount === 1 ? "" : "s"} and ${parsed.mealCount} meal${parsed.mealCount === 1 ? "" : "s"}. Range: ${parsed.fromKey} to ${parsed.toKey}.${replaceNote}`,
+        });
+      }
+
+      if (parsed.warnings.length) {
+        const warnings = preview.createDiv({ cls: "mp-import-warnings" });
+        parsed.warnings.slice(0, 8).forEach((message) => warnings.createDiv({ text: message }));
+        if (parsed.warnings.length > 8) warnings.createDiv({ text: `+${parsed.warnings.length - 8} more warning${parsed.warnings.length - 8 === 1 ? "" : "s"}` });
+      }
+    };
+
+    textarea.addEventListener("input", renderPreview);
+    renderPreview();
+
+    new Setting(contentEl)
+      .addButton((button) => {
+        button.setButtonText("Import");
+        button.setCta();
+        button.onClick(async () => {
+          parsed = parseMealPlanText(textarea.value, this.view.recipeCache, this.view.plugin.settings.defaultMeals);
+          if (!textarea.value.trim()) {
+            new Notice("Paste meal plan text first.");
+            textarea.focus();
+            return;
+          }
+          if (!parsed.entries.length) {
+            new Notice("No importable recipe lines found.");
+            textarea.focus();
+            return;
+          }
+          const didImport = await this.view.importMealPlan(parsed, mode);
+          if (didImport) this.close();
+        });
+      })
+      .addButton((button) => {
+        button.setButtonText("Cancel");
+        button.onClick(() => this.close());
+      });
+  }
+
+  onClose() {
+    this.contentEl.empty();
   }
 }
 
@@ -1633,6 +1864,172 @@ function recipeSearchText(recipe) {
   ].join(" ").toLowerCase();
 }
 
+function formatMealPlanText(plans, recipes, fromKey, toKey) {
+  const lines = [`Meal Plan: ${fromKey} to ${toKey}`];
+  const entries = mealPlanEntriesForRange(plans, fromKey, toKey);
+  const recipeList = recipes || [];
+  if (!entries.length) {
+    lines.push("", "No planned recipes.");
+    return lines.join("\n");
+  }
+
+  let currentDay = "";
+  let currentMeal = "";
+  entries.forEach(({ dayKey, mealName, entry }) => {
+    if (dayKey !== currentDay) {
+      if (currentDay) lines.push("");
+      lines.push(`${dayKey} ${weekdayShortName(dayKey)}`);
+      currentDay = dayKey;
+      currentMeal = "";
+    }
+    if (mealName !== currentMeal) {
+      lines.push(mealName);
+      currentMeal = mealName;
+    }
+
+    const recipe = recipeList.find((item) => item.path === entry.path);
+    const name = recipe?.name || entry.name || entry.path || "Untitled recipe";
+    const target = Number(entry.targetServings);
+    const suffix = Number.isFinite(target) && target > 0 ? ` (servings: ${formatAmount(target)})` : "";
+    lines.push(`- ${name}${suffix}`);
+  });
+
+  return lines.join("\n");
+}
+
+function mealPlanEntriesForRange(plans, fromKey, toKey) {
+  const entries = [];
+  Object.entries(plans || {})
+    .filter(([dayKey]) => dayKey >= fromKey && dayKey <= toKey)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .forEach(([dayKey, dayPlans]) => {
+      Object.entries(dayPlans || {}).forEach(([mealName, mealEntries]) => {
+        (mealEntries || []).forEach((entry, index) => {
+          entries.push({ dayKey, mealName, entry, index });
+        });
+      });
+    });
+  return entries;
+}
+
+function parseMealPlanText(text, recipes, defaultMeals) {
+  const entries = [];
+  const warnings = [];
+  const recipeList = recipes || [];
+  const mealDefaults = defaultMeals || [];
+  const header = String(text || "").match(/Meal Plan:\s*(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})/i);
+  const headerFrom = header && isDateKey(header[1]) ? header[1] : "";
+  const headerTo = header && isDateKey(header[2]) ? header[2] : "";
+  let currentDayKey = "";
+  let currentMealName = "";
+
+  String(text || "").split(/\r?\n/).forEach((rawLine, index) => {
+    const line = rawLine.trim();
+    const lineNumber = index + 1;
+    if (!line) return;
+    if (/^Meal Plan:/i.test(line) || /^No planned recipes\.$/i.test(line)) return;
+
+    const dateMatch = line.match(/^(\d{4}-\d{2}-\d{2})(?:\s+.*)?$/);
+    if (dateMatch) {
+      if (!isDateKey(dateMatch[1])) {
+        warnings.push(`Line ${lineNumber}: invalid date ${dateMatch[1]}.`);
+        currentDayKey = "";
+        currentMealName = "";
+        return;
+      }
+      currentDayKey = dateMatch[1];
+      currentMealName = "";
+      return;
+    }
+
+    const recipeMatch = line.match(/^[-*]\s+(.+)$/);
+    if (recipeMatch) {
+      if (!currentDayKey) {
+        warnings.push(`Line ${lineNumber}: recipe has no date and was skipped.`);
+        return;
+      }
+      if (!currentMealName) {
+        currentMealName = mealDefaults[2] || mealDefaults[0] || "Dinner";
+        warnings.push(`Line ${lineNumber}: missing meal heading, imported under ${currentMealName}.`);
+      }
+
+      const parsedRecipe = parseMealPlanRecipeLine(recipeMatch[1]);
+      const recipe = resolveMealPlanRecipe(parsedRecipe.name, recipeList);
+      if (!recipe) warnings.push(`Line ${lineNumber}: recipe not found: ${parsedRecipe.name}.`);
+      const entry = recipe
+        ? { path: recipe.path, name: recipe.name }
+        : { name: parsedRecipe.name };
+      if (parsedRecipe.targetServings) entry.targetServings = parsedRecipe.targetServings;
+      entries.push({ dayKey: currentDayKey, mealName: currentMealName, entry });
+      return;
+    }
+
+    currentMealName = line;
+  });
+
+  const parsedDates = uniqueValues(entries.map((item) => item.dayKey)).sort();
+  const fromKey = headerFrom || parsedDates[0] || "";
+  const toKey = headerTo || parsedDates[parsedDates.length - 1] || fromKey;
+  if (headerFrom && headerTo && headerFrom > headerTo) warnings.push("Header date range is reversed.");
+
+  return {
+    entries,
+    warnings,
+    fromKey,
+    toKey,
+    dayCount: parsedDates.length,
+    mealCount: new Set(entries.map((item) => `${item.dayKey}::${item.mealName}`)).size,
+  };
+}
+
+function parseMealPlanRecipeLine(value) {
+  const line = String(value || "").trim();
+  const servingsMatch = line.match(/\s+\((?:servings|serving|份量|份):\s*(\d+(?:\.\d+)?)\)\s*$/i);
+  if (!servingsMatch) return { name: line, targetServings: null };
+  const targetServings = Number(servingsMatch[1]);
+  return {
+    name: line.slice(0, servingsMatch.index).trim(),
+    targetServings: Number.isFinite(targetServings) && targetServings > 0 ? targetServings : null,
+  };
+}
+
+function resolveMealPlanRecipe(name, recipes) {
+  const normalized = String(name || "").trim();
+  const recipeList = recipes || [];
+  if (!normalized) return null;
+  return recipeList.find((recipe) => recipe.name === normalized)
+    || recipeList.find((recipe) => recipe.path === normalized)
+    || recipeList.find((recipe) => recipe.name.toLowerCase() === normalized.toLowerCase())
+    || null;
+}
+
+function mealPlanEntriesMatch(a, b) {
+  return String(a?.path || "") === String(b?.path || "")
+    && String(a?.name || "") === String(b?.name || "")
+    && String(a?.targetServings || "") === String(b?.targetServings || "");
+}
+
+function rangeDateKeys(fromKey, toKey) {
+  if (!isDateKey(fromKey) || !isDateKey(toKey) || fromKey > toKey) return [];
+  const from = new Date(`${fromKey}T00:00:00`);
+  const to = new Date(`${toKey}T00:00:00`);
+  const count = Math.round((to - from) / 86400000) + 1;
+  return rangeDays(from, count).map(formatDateKey);
+}
+
+function weekdayShortName(dayKey) {
+  if (!isDateKey(dayKey)) return "";
+  return new Date(`${dayKey}T00:00:00`).toLocaleDateString(undefined, { weekday: "short" });
+}
+
+async function copyTextToClipboard(text) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  throw new Error("Clipboard API is not available.");
+}
+
 function cleanWiki(value) {
   if (!value) return "";
   return String(value).replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].trim();
@@ -2017,6 +2414,11 @@ function isDateKey(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
   const date = new Date(`${value}T00:00:00`);
   return Number.isFinite(date.getTime()) && formatDateKey(date) === value;
+}
+
+function clampIndex(value, length) {
+  const index = Number.isInteger(value) ? value : length;
+  return Math.max(0, Math.min(index, length));
 }
 
 function formatShortDate(date) {
