@@ -825,7 +825,11 @@ var MealPlannerView = class extends import_obsidian2.ItemView {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("meal-planner-root");
-    this.renderToolbar(container);
+    const stickyHeader = container.createDiv({ cls: "mp-sticky-header" });
+    this.renderToolbar(stickyHeader);
+    if (this.primaryMode === "calendar" && this.viewMode !== "day") {
+      this.renderWeekHeader(stickyHeader);
+    }
     if (this.primaryMode === "shopping") {
       this.renderShoppingList(container);
     } else {
@@ -919,14 +923,14 @@ var MealPlannerView = class extends import_obsidian2.ItemView {
     const calendar = container.createDiv({
       cls: `mp-calendar mp-${this.viewMode}`
     });
-    if (this.viewMode !== "day") {
-      const header = calendar.createDiv({ cls: "mp-week-header" });
-      ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((name) => {
-        header.createDiv({ cls: "mp-weekday", text: name });
-      });
-    }
     const grid = calendar.createDiv({ cls: "mp-grid" });
     days.forEach((date) => this.renderDay(grid, date));
+  }
+  renderWeekHeader(parent) {
+    const header = parent.createDiv({ cls: "mp-week-header" });
+    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((name) => {
+      header.createDiv({ cls: "mp-weekday", text: name });
+    });
   }
   renderDay(grid, date) {
     const key = formatDateKey(date);

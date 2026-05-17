@@ -4,6 +4,15 @@
   padding: 14px;
 }
 
+.mp-sticky-header {
+  background: var(--background-primary);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .mp-toolbar {
   align-items: center;
   border-bottom: 1px solid var(--background-modifier-border);
@@ -12,6 +21,10 @@
   grid-template-columns: auto 1fr auto;
   margin-bottom: 12px;
   padding-bottom: 12px;
+}
+
+.mp-sticky-header .mp-toolbar {
+  margin-bottom: 0;
 }
 
 .mp-toolbar-group {
@@ -115,7 +128,7 @@
   display: grid;
   gap: 8px;
   grid-template-columns: repeat(7, minmax(96px, 1fr));
-  margin-bottom: 8px;
+  margin-top: 8px;
 }
 
 .mp-weekday {
