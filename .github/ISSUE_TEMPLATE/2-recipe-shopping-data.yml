@@ -1,0 +1,106 @@
+name: Recipe, Shopping, or Nutrition Bug
+description: Report incorrect parsing, serving scaling, shopping list, import/export, or nutrition behavior.
+labels:
+  - bug
+  - domain
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the plugin opens but produces the wrong meal plan, ingredient quantities, shopping categories, pantry grouping, import/export text, or nutrition values.
+
+        Please include a small redacted recipe or ingredient note. A minimal example is much faster to fix than a screenshot.
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Meal Planner version
+      placeholder: "0.2.8"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area is wrong?
+      multiple: true
+      options:
+        - Recipe parsing
+        - Ingredient parsing
+        - Serving scaling
+        - Shopping list grouping
+        - Pantry filtering
+        - Nutrition values
+        - Meal plan import
+        - Meal plan export
+        - Date range handling
+        - Missing recipe matching
+    validations:
+      required: true
+
+  - type: textarea
+    id: recipe-note
+    attributes:
+      label: Minimal recipe note
+      description: Paste the smallest recipe note that reproduces the issue. Redact private details if needed.
+      render: markdown
+      placeholder: |
+        ---
+        name: Salmon Pasta
+        servings: 2
+        ingredients:
+          - Salmon
+          - Pasta
+        ---
+
+        ## Ingredients
+        - Salmon: 250g
+        - Pasta: 180g
+
+  - type: textarea
+    id: ingredient-note
+    attributes:
+      label: Minimal ingredient note
+      description: If ingredient metadata matters, paste the relevant ingredient note.
+      render: markdown
+      placeholder: |
+        ---
+        category: Produce
+        pantry: false
+        energy_per_100g: 18
+        ---
+
+  - type: textarea
+    id: meal-plan
+    attributes:
+      label: Meal plan or imported text
+      description: Paste the relevant planned dates/meals or imported text.
+      render: text
+      placeholder: |
+        Meal Plan: 2026-05-18 to 2026-05-24
+
+        2026-05-18 Mon
+        Dinner
+        - Salmon Pasta (servings: 2)
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual output
+      description: Paste the shopping list, nutrition result, export text, or planner state you got.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected output
+      description: Show the exact quantities, categories, dates, or text you expected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional information
+      description: Include locale/date format, units, or unusual Markdown formatting if relevant.

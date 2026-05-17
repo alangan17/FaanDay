@@ -1,0 +1,106 @@
+name: Plugin Bug
+description: Report a Meal Planner bug in Obsidian.
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting a new issue, please search existing issues first. If the same issue already exists, add a reaction or comment there instead of opening a duplicate.
+
+        Please paste text instead of screenshots when possible. Redact private recipe names, vault paths, or personal data if needed.
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Meal Planner version
+      description: You can find this in Obsidian Settings -> Community plugins -> Meal Planner, or in the plugin's manifest.json.
+      placeholder: "0.2.8"
+    validations:
+      required: true
+
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian version
+      placeholder: "1.8.7"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - iOS
+        - Android
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: How did you install or update the plugin?
+      options:
+        - Manual install from release files
+        - In-plugin stable release updater
+        - BRAT
+        - Built from source
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened?
+      description: Include exact error messages from Obsidian's developer console if available.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest set of steps that triggers the bug.
+      placeholder: |
+        1. Open Meal Planner
+        2. Select ...
+        3. Click ...
+        4. See ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Relevant Meal Planner settings
+      description: Include recipe folder, ingredients folder, custom meal names, and update settings if relevant.
+      placeholder: |
+        Recipe folder: recipe
+        Ingredients folder: ingredients
+        Meals: Breakfast, Lunch, Dinner
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console logs
+      description: Optional. Open Developer Tools in Obsidian and paste relevant errors.
+      render: text
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional information
+      description: Anything else that helps explain the bug.

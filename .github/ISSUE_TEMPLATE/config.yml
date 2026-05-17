@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Read the Meal Planner guide
+    url: https://github.com/alangan17/obsidian-meal-planner/blob/main/README.md
+    about: Check the setup, recipe format, shopping list, import/export, and update instructions before opening an issue.
+  - name: Obsidian forum
+    url: https://forum.obsidian.md/
+    about: For general Obsidian usage questions that are not specific to Meal Planner.

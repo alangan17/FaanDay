@@ -1,0 +1,47 @@
+name: Documentation Issue
+description: Report missing, incorrect, or confusing Meal Planner documentation.
+labels:
+  - docs
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for README, user guide, recipe format, ingredient metadata, update instructions, or Codex usage documentation issues.
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: What type of documentation issue is this?
+      multiple: true
+      options:
+        - Documentation is missing
+        - Documentation is incorrect
+        - Documentation is confusing
+        - Example recipe does not work
+        - Example ingredient metadata does not work
+        - Translation issue
+        - Something else
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Where did you find it?
+      description: Link the file, section, heading, or URL if possible.
+      placeholder: "README.md -> Recipe format"
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is the issue?
+      description: Explain what is missing, wrong, or confusing.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording or example
+      description: Optional. Paste the wording or example you expected to see.
+      render: markdown
