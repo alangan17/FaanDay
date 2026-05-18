@@ -1,10 +1,12 @@
-# Meal Planner
+# FaanDay
 
 [廣東話](README.zh-HK.md) | English
 
 Plan weekly meals in Obsidian and generate a grocery list from your recipe notes.
 
-Meal Planner turns a folder of Markdown recipes into a practical cooking workflow:
+![FaanDay preview](assets/faanday-preview.png)
+
+FaanDay turns a folder of Markdown recipes into a practical cooking workflow:
 
 - Add recipes to a calendar by breakfast, lunch, dinner, or your own meal names.
 - Switch between recipe, ingredient, and nutrition views while planning.
@@ -14,14 +16,14 @@ Meal Planner turns a folder of Markdown recipes into a practical cooking workflo
 ## Quick start
 
 1. Create recipe notes in your recipe folder. The default folder is `recipe`.
-2. Open the Meal Planner view from the ribbon or command palette.
+2. Open the FaanDay view from the ribbon or command palette.
 3. Select a day, add a recipe, then switch to Shopping to generate the shopping list.
 
 If you already keep recipes in Obsidian, start by matching the recipe format below. If you are starting from scratch, create one recipe first and plan a single dinner before filling out the rest of the week.
 
 ## Recipe format
 
-Meal Planner reads recipe metadata from frontmatter and ingredient amounts from the note body.
+FaanDay reads recipe metadata from frontmatter and ingredient amounts from the note body.
 
 ```markdown
 ---
@@ -80,13 +82,13 @@ Pantry items stay visible in their own section, so common seasonings are easy to
 
 ## Shopping list
 
-Open the Meal Planner view and switch from Calendar to Shopping. Choose a from date and to date to aggregate planned recipe ingredients into a supermarket-style list.
+Open the FaanDay view and switch from Calendar to Shopping. Choose a from date and to date to aggregate planned recipe ingredients into a supermarket-style list.
 
-Meal Planner groups ingredients by category, combines matching quantities, tracks which recipes and days need each item, and can hide pantry staples when you only want to see what to buy.
+FaanDay groups ingredients by category, combines matching quantities, tracks which recipes and days need each item, and can hide pantry staples when you only want to see what to buy.
 
 ## Import and export
 
-Use Import and Export in the Meal Planner toolbar to move meal plans as plain text. Export uses the selected shopping range in Shopping mode, or the visible calendar range in Calendar mode.
+Use Import and Export in the FaanDay toolbar to move meal plans as plain text. Export uses the selected shopping range in Shopping mode, or the visible calendar range in Calendar mode.
 
 ```text
 Meal Plan: 2026-05-18 to 2026-05-24
@@ -104,7 +106,7 @@ Recipes are matched by exact name, path, or case-insensitive name. Unresolved re
 
 ## Using Codex
 
-You can use Codex as an assistant for operating your Meal Planner vault data. Ask it to turn rough meal ideas into a dated plan, create recipe notes in the expected format, add ingredient metadata, clean up pantry categories, or prepare an exportable plan for sharing.
+You can use Codex as an assistant for operating your FaanDay vault data. Ask it to turn rough meal ideas into a dated plan, create recipe notes in the expected format, add ingredient metadata, clean up pantry categories, or prepare an exportable plan for sharing.
 
 Example requests:
 
@@ -117,7 +119,7 @@ For the full user workflow, see [CODEX_USER_GUIDE.md](CODEX_USER_GUIDE.md).
 
 ## Settings
 
-Meal Planner settings let you choose:
+FaanDay settings let you choose:
 
 - Recipe folder
 - Ingredients folder
@@ -132,7 +134,7 @@ The plugin can check GitHub for the latest stable release from inside Obsidian:
 
 1. Open Settings.
 2. Go to Community plugins.
-3. Open Meal Planner settings.
+3. Open FaanDay settings.
 4. Select Check and install under Stable release updates.
 
 This downloads `manifest.json`, `main.js`, and `styles.css` from the matching `release/vX.Y.Z` branch. Reload Obsidian after installing an update.
