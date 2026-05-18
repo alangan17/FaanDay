@@ -1,9 +1,9 @@
 {
-  "id": "meal-planner",
-  "name": "Meal Planner",
+  "id": "faanday",
+  "name": "FaanDay",
   "version": "0.2.8",
   "minAppVersion": "1.5.0",
-  "description": "Plan daily cooking with recipe links and switch between recipe, ingredient, and nutrition views.",
+  "description": "Plan daily cooking in Obsidian with recipe links, shopping lists, and nutrition views.",
   "author": "Alan Ngan",
   "authorUrl": "",
   "isDesktopOnly": false

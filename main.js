@@ -21,7 +21,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/main.ts
 var main_exports = {};
 __export(main_exports, {
-  default: () => MealPlannerCalendarPlugin
+  default: () => FaanDayPlugin
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian2 = require("obsidian");
@@ -313,6 +313,16 @@ function mealPlanEntriesMatch(a, b) {
 }
 
 // src/domain/mealPlanMutations.ts
+var SAMPLE_RECIPE_NAME = "Tomato Egg Rice";
+var SAMPLE_RECIPE_FILENAME = `${SAMPLE_RECIPE_NAME}.md`;
+var SAMPLE_RECIPE_INGREDIENTS = ["Egg", "Tomato", "Rice", "Soy Sauce", "Oil"];
+var SAMPLE_INGREDIENT_METADATA = [
+  { name: "Egg", category: "Protein", pantry: false },
+  { name: "Tomato", category: "Produce", pantry: false },
+  { name: "Rice", category: "Dry Goods", pantry: false },
+  { name: "Soy Sauce", category: "Seasonings", pantry: true },
+  { name: "Oil", category: "Seasonings", pantry: true }
+];
 function cloneEntry(entry) {
   return JSON.parse(JSON.stringify(entry));
 }
@@ -331,6 +341,54 @@ function addEntryToPlans(plans, dayKey, mealName, recipe, targetServings) {
   }
   plans[dayKey][mealName].push(entry);
   return entry;
+}
+function addSampleEntryToPlans(plans, dayKey, recipePath) {
+  const entry = { path: recipePath, name: SAMPLE_RECIPE_NAME };
+  if (!plans[dayKey]) plans[dayKey] = {};
+  if (!plans[dayKey].Dinner) plans[dayKey].Dinner = [];
+  const existing = plans[dayKey].Dinner.find((item) => mealPlanEntriesMatch(item, entry));
+  if (existing) return { entry: existing, added: false };
+  plans[dayKey].Dinner.push(cloneEntry(entry));
+  return { entry, added: true };
+}
+function sampleRecipeMarkdown() {
+  return [
+    "---",
+    "type: recipe",
+    `name: ${SAMPLE_RECIPE_NAME}`,
+    "servings: 2",
+    "tags:",
+    "  - dinner",
+    "  - sample",
+    "ingredients:",
+    ...SAMPLE_RECIPE_INGREDIENTS.map((name) => `  - ${name}`),
+    "---",
+    "",
+    "## Ingredients / \u6750\u6599",
+    "",
+    "- [[Egg]] 4 units",
+    "- [[Tomato]] 300g",
+    "- [[Rice]] 300g",
+    "- [[Soy Sauce]] 1 tbsp",
+    "- [[Oil]] 1 tbsp",
+    "",
+    "## Method / \u505A\u6CD5",
+    "",
+    "1. Cook the rice.",
+    "2. Scramble the eggs, then set them aside.",
+    "3. Cook the tomato until softened, then add the eggs back.",
+    "4. Season with soy sauce and serve over rice.",
+    ""
+  ].join("\n");
+}
+function sampleIngredientMarkdown(item) {
+  return [
+    "---",
+    `category: ${item.category}`,
+    `pantry: ${item.pantry ? "true" : "false"}`,
+    "---",
+    ""
+  ].join("\n");
 }
 function importEntriesIntoPlans(plans, parsed, mode, rangeDateKeys2) {
   if (mode === "replace") {
@@ -590,7 +648,7 @@ function firstPresentValue(...values) {
 
 // src/io/updater.ts
 var import_obsidian = require("obsidian");
-var GITHUB_REPO = "alangan17/obsidian-meal-planner";
+var GITHUB_REPO = "alangan17/FaanDay";
 var RELEASE_FILES = ["manifest.json", "main.js", "styles.css"];
 async function fetchLatestRelease() {
   const response = await (0, import_obsidian.requestUrl)({
@@ -654,7 +712,17 @@ function parseVersion(version) {
 }
 
 // src/main.ts
-var VIEW_TYPE = "meal-planner-view";
+var VIEW_TYPE = "faanday-view";
+var FAANDAY_ICON = "faanday";
+var FAANDAY_ICON_SVG = `
+<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="7.9">
+  <path d="M33.3 12.5v12.5M66.7 12.5v12.5M20.8 29.2h58.4M20.8 42.7V28.1c0-6.3 5.1-11.5 11.5-11.5h35.4c6.3 0 11.5 5.1 11.5 11.5v43.8c0 6.3-5.1 11.5-11.5 11.5H56.3" />
+  <path d="m59.4 53.1 5.2 5.2 10.4-11.5M62.5 66.7h11.5" />
+  <path d="M17.7 59.4c1-5.6 5.6-9.8 11.5-10.2 1.9-4 5.8-6.5 10.2-6.5 4.2 0 7.7 2.1 9.8 5.2 1-.3 2.3-.5 3.5-.5 6.5 0 11.7 5 12.1 11.3" />
+  <path d="M14.6 59.4h51c0 13.3-10.8 24-24 24h-3.1c-13.1 0-23.9-10.6-23.9-24ZM27.1 83.3v3.1c0 2.9 2.3 5.2 5.2 5.2h14.6c2.9 0 5.2-2.3 5.2-5.2v-3.1" />
+  <path d="M32.3 53.8h0M42.7 51.9h0M51 54.8h0" />
+</g>
+`;
 var DEFAULT_SETTINGS = {
   recipeFolder: "recipe",
   ingredientsFolder: "ingredients",
@@ -662,16 +730,17 @@ var DEFAULT_SETTINGS = {
   plans: {},
   defaultMeals: ["Breakfast", "Lunch", "Dinner"]
 };
-var MealPlannerCalendarPlugin = class extends import_obsidian2.Plugin {
+var FaanDayPlugin = class extends import_obsidian2.Plugin {
   async onload() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    this.registerView(VIEW_TYPE, (leaf) => new MealPlannerView(leaf, this));
-    this.addRibbonIcon("calendar-days", "Meal planner", () => {
+    (0, import_obsidian2.addIcon)(FAANDAY_ICON, FAANDAY_ICON_SVG);
+    this.registerView(VIEW_TYPE, (leaf) => new FaanDayView(leaf, this));
+    this.addRibbonIcon(FAANDAY_ICON, "FaanDay", () => {
       this.activateView();
     });
     this.addCommand({
-      id: "open-meal-planner",
-      name: "Open meal planner",
+      id: "open-faanday",
+      name: "Open FaanDay",
       callback: () => this.activateView()
     });
     this.addCommand({
@@ -679,7 +748,15 @@ var MealPlannerCalendarPlugin = class extends import_obsidian2.Plugin {
       name: "Check for stable release update",
       callback: () => this.checkForStableReleaseUpdate({ install: true })
     });
-    this.addSettingTab(new MealPlannerSettingTab(this.app, this));
+    this.addCommand({
+      id: "create-sample-meal-plan",
+      name: "Create sample meal plan",
+      callback: async () => {
+        const view = await this.activateView();
+        if (view instanceof FaanDayView) await view.createSampleMealPlan();
+      }
+    });
+    this.addSettingTab(new FaanDaySettingTab(this.app, this));
   }
   async onunload() {
     this.app.workspace.detachLeavesOfType(VIEW_TYPE);
@@ -689,6 +766,7 @@ var MealPlannerCalendarPlugin = class extends import_obsidian2.Plugin {
     const leaf = leaves[0] || this.app.workspace.getLeaf(true);
     await leaf.setViewState({ type: VIEW_TYPE, active: true });
     this.app.workspace.revealLeaf(leaf);
+    return leaf.view;
   }
   async saveSettings() {
     await this.saveData(this.settings);
@@ -709,14 +787,14 @@ var MealPlannerCalendarPlugin = class extends import_obsidian2.Plugin {
       const remoteVersion = versionFromTag(release.tag_name);
       const currentVersion = this.manifest.version;
       if (!isNewerVersion(remoteVersion, currentVersion)) {
-        new import_obsidian2.Notice(`Meal Planner is up to date (${currentVersion}).`);
+        new import_obsidian2.Notice(`FaanDay is up to date (${currentVersion}).`);
         return { updated: false, currentVersion, remoteVersion };
       }
       if (!install) {
-        new import_obsidian2.Notice(`Meal Planner ${remoteVersion} is available.`);
+        new import_obsidian2.Notice(`FaanDay ${remoteVersion} is available.`);
         return { updated: false, currentVersion, remoteVersion };
       }
-      new import_obsidian2.Notice(`Installing Meal Planner ${remoteVersion}...`);
+      new import_obsidian2.Notice(`Installing FaanDay ${remoteVersion}...`);
       const files = await downloadReleaseFiles(release.tag_name, remoteVersion);
       const pluginDir = this.getPluginAdapterPath();
       await Promise.all(RELEASE_FILES.map((file) => {
@@ -725,16 +803,16 @@ var MealPlannerCalendarPlugin = class extends import_obsidian2.Plugin {
           throw new Error(`Could not write ${path}: ${error.message || error}`);
         });
       }));
-      new import_obsidian2.Notice(`Installed Meal Planner ${remoteVersion}. Reload Obsidian to finish updating.`, 1e4);
+      new import_obsidian2.Notice(`Installed FaanDay ${remoteVersion}. Reload Obsidian to finish updating.`, 1e4);
       return { updated: true, currentVersion, remoteVersion };
     } catch (error) {
-      console.error("Meal Planner update failed", error);
-      new import_obsidian2.Notice(`Meal Planner update failed: ${error.message || error}`);
+      console.error("FaanDay update failed", error);
+      new import_obsidian2.Notice(`FaanDay update failed: ${error.message || error}`);
       return { updated: false, error };
     }
   }
 };
-var MealPlannerSettingTab = class extends import_obsidian2.PluginSettingTab {
+var FaanDaySettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -742,7 +820,7 @@ var MealPlannerSettingTab = class extends import_obsidian2.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Meal Planner" });
+    containerEl.createEl("h2", { text: "FaanDay" });
     new import_obsidian2.Setting(containerEl).setName("Recipe folder").setDesc("Recipes shown in the picker. New recipes are created here.").addText((text) => {
       text.setPlaceholder(DEFAULT_SETTINGS.recipeFolder).setValue(this.plugin.settings.recipeFolder).onChange(async (value) => {
         this.plugin.settings.recipeFolder = cleanFolderPath(value) || DEFAULT_SETTINGS.recipeFolder;
@@ -782,11 +860,11 @@ var MealPlannerSettingTab = class extends import_obsidian2.PluginSettingTab {
     const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
     await Promise.all(leaves.map(async (leaf) => {
       const view = leaf.view;
-      if (view instanceof MealPlannerView) await view.render();
+      if (view instanceof FaanDayView) await view.render();
     }));
   }
 };
-var MealPlannerView = class extends import_obsidian2.ItemView {
+var FaanDayView = class extends import_obsidian2.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.plugin = plugin;
@@ -799,6 +877,8 @@ var MealPlannerView = class extends import_obsidian2.ItemView {
     this.shoppingToDate = formatDateKey(addDays(startOfWeek(this.cursorDate), 6));
     this.showPantryItems = true;
     this.shoppingCheckedItems = /* @__PURE__ */ new Set();
+    this.mobileControlsOpen = false;
+    this.pendingFocusDayKey = null;
     this.recipeCache = [];
     this.fileMetaCache = /* @__PURE__ */ new Map();
     this.dragPayload = null;
@@ -807,13 +887,13 @@ var MealPlannerView = class extends import_obsidian2.ItemView {
     return VIEW_TYPE;
   }
   getDisplayText() {
-    return "Meal planner";
+    return "FaanDay";
   }
   getIcon() {
-    return "calendar-days";
+    return FAANDAY_ICON;
   }
   async onOpen() {
-    this.containerEl.addClass("meal-planner-view");
+    this.containerEl.addClass("faanday-view");
     await this.render();
   }
   async onClose() {
@@ -822,99 +902,162 @@ var MealPlannerView = class extends import_obsidian2.ItemView {
   async render() {
     this.fileMetaCache.clear();
     this.recipeCache = await this.loadRecipes();
+    this.containerEl.querySelectorAll(".mp-mobile-toolbar").forEach((toolbar) => toolbar.remove());
+    const viewHeader = this.containerEl.children[0];
+    if (viewHeader) this.renderToolbar(viewHeader);
     const container = this.containerEl.children[1];
     container.empty();
-    container.addClass("meal-planner-root");
-    const stickyHeader = container.createDiv({ cls: "mp-sticky-header" });
-    this.renderToolbar(stickyHeader);
+    container.addClass("faanday-root");
     if (this.primaryMode === "calendar" && this.viewMode !== "day") {
+      const stickyHeader = container.createDiv({ cls: "mp-sticky-header" });
       this.renderWeekHeader(stickyHeader);
     }
     if (this.primaryMode === "shopping") {
       this.renderShoppingList(container);
     } else {
+      if (this.recipeCache.length === 0) this.renderSampleOnboarding(container);
       this.renderCalendar(container);
+      this.focusPendingDay();
     }
   }
+  renderSampleOnboarding(container) {
+    const empty = container.createDiv({ cls: "mp-onboarding-empty" });
+    const content = empty.createDiv({ cls: "mp-onboarding-content" });
+    content.createDiv({
+      cls: "mp-onboarding-title",
+      text: "Create a sample recipe and shopping list to see how FaanDay works."
+    });
+    content.createDiv({
+      cls: "mp-onboarding-copy",
+      text: "FaanDay will add one recipe, ingredient notes, and today's dinner plan."
+    });
+    empty.createEl("button", { cls: "mp-button", text: "Create sample plan" }, (button) => {
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          await this.createSampleMealPlan();
+        } finally {
+          button.disabled = false;
+        }
+      });
+    });
+  }
   renderToolbar(container) {
-    const toolbar = container.createDiv({ cls: "mp-toolbar" });
-    const left = toolbar.createDiv({ cls: "mp-toolbar-group" });
-    this.iconButton(left, "chevron-left", "Previous", () => {
+    const toolbar = container.createDiv({ cls: "mp-mobile-toolbar" });
+    const nav = toolbar.createDiv({ cls: "mp-mobile-nav" });
+    const actions = nav.createDiv({ cls: "mp-mobile-actions" });
+    actions.createDiv({ cls: "mp-mobile-title", text: this.titleForCursor() });
+    this.iconButton(actions, "chevron-left", "Previous", () => {
+      this.mobileControlsOpen = false;
       if (this.primaryMode === "shopping") this.moveShoppingRange(-1);
       else this.moveCursor(-1);
     });
-    left.createEl("button", { cls: "mp-button", text: "Today" }, (button) => {
+    actions.createEl("button", { cls: "mp-button", text: "Today" }, (button) => {
       button.addEventListener("click", () => {
-        this.cursorDate = startOfDay(/* @__PURE__ */ new Date());
+        this.mobileControlsOpen = false;
+        const today = startOfDay(/* @__PURE__ */ new Date());
+        this.cursorDate = today;
+        this.pendingFocusDayKey = this.primaryMode === "calendar" ? formatDateKey(today) : null;
         if (this.primaryMode === "shopping") this.syncShoppingRangeToCalendar();
         this.render();
       });
     });
-    this.iconButton(left, "chevron-right", "Next", () => {
+    this.iconButton(actions, "chevron-right", "Next", () => {
+      this.mobileControlsOpen = false;
       if (this.primaryMode === "shopping") this.moveShoppingRange(1);
       else this.moveCursor(1);
     });
-    toolbar.createDiv({ cls: "mp-title", text: this.titleForCursor() });
-    const right = toolbar.createDiv({ cls: "mp-toolbar-group mp-toolbar-wrap" });
-    const primaryControls = this.toolbarControlGroup(right);
-    this.segmented(primaryControls, ["calendar", "shopping"], this.primaryMode, (value) => {
-      this.primaryMode = value;
-      if (value === "shopping") this.syncShoppingRangeToCalendar();
+    const menuButton = this.iconButton(actions, "more-horizontal", "Planner controls", () => {
+      this.mobileControlsOpen = !this.mobileControlsOpen;
       this.render();
     });
-    this.renderPlanTransferButtons(this.toolbarControlGroup(right));
+    if (this.mobileControlsOpen) menuButton.addClass("is-active");
+    if (this.mobileControlsOpen) this.renderMobileControls(toolbar);
+  }
+  renderMobileControls(parent) {
+    const panel = parent.createDiv({ cls: "mp-mobile-menu" });
+    const closeAndRender = () => {
+      this.mobileControlsOpen = false;
+      this.render();
+    };
+    this.renderMobileControlSection(panel, "View", (section) => {
+      this.segmented(this.toolbarControlGroup(section), ["calendar", "shopping"], this.primaryMode, (value) => {
+        this.primaryMode = value;
+        if (value === "shopping") this.syncShoppingRangeToCalendar();
+        closeAndRender();
+      });
+    });
     if (this.primaryMode === "shopping") {
-      this.renderShoppingControls(this.toolbarControlGroup(right, "mp-toolbar-control-wide"));
-      return;
+      this.renderMobileControlSection(panel, "Range", (section) => {
+        this.renderShoppingControls(this.toolbarControlGroup(section, "mp-toolbar-control-wide"), closeAndRender);
+      });
+    } else {
+      this.renderMobileControlSection(panel, "Range", (section) => {
+        this.segmented(this.toolbarControlGroup(section), ["month", "week", "day"], this.viewMode, (value) => {
+          this.viewMode = value;
+          closeAndRender();
+        });
+      });
+      this.renderMobileControlSection(panel, "Detail", (section) => {
+        this.segmented(this.toolbarControlGroup(section), ["recipe", "ingredients", "nutrition"], this.detailMode, (value) => {
+          this.detailMode = value;
+          closeAndRender();
+        });
+      });
+      this.renderMobileControlSection(panel, "Grouping", (section) => {
+        this.segmented(this.toolbarControlGroup(section), ["meals", "all day"], this.groupMode, (value) => {
+          this.groupMode = value;
+          closeAndRender();
+        });
+      });
     }
-    const viewControls = this.toolbarControlGroup(right);
-    this.segmented(viewControls, ["month", "week", "day"], this.viewMode, (value) => {
-      this.viewMode = value;
-      this.render();
+    this.renderMobileControlSection(panel, "Transfer", (section) => {
+      this.renderPlanTransferButtons(this.toolbarControlGroup(section), closeAndRender);
     });
-    const detailControls = this.toolbarControlGroup(right);
-    this.segmented(detailControls, ["recipe", "ingredients", "nutrition"], this.detailMode, (value) => {
-      this.detailMode = value;
-      this.render();
-    });
-    const groupControls = this.toolbarControlGroup(right);
-    this.segmented(groupControls, ["meals", "all day"], this.groupMode, (value) => {
-      this.groupMode = value;
-      this.render();
-    });
+  }
+  renderMobileControlSection(parent, label, renderContent) {
+    const section = parent.createDiv({ cls: "mp-mobile-menu-section" });
+    section.createDiv({ cls: "mp-mobile-menu-label", text: label });
+    const content = section.createDiv({ cls: "mp-mobile-menu-content" });
+    renderContent(content);
   }
   toolbarControlGroup(parent, cls = "") {
     return parent.createDiv({ cls: `mp-toolbar-control ${cls}`.trim() });
   }
-  renderPlanTransferButtons(parent) {
+  renderPlanTransferButtons(parent, onAction = null) {
     const actions = parent.createDiv({ cls: "mp-plan-transfer" });
     actions.createEl("button", { cls: "mp-button", text: "Import" }, (button) => {
       button.addEventListener("click", () => {
+        if (onAction) onAction();
         new MealPlanImportModal(this.app, this).open();
       });
     });
     actions.createEl("button", { cls: "mp-button", text: "Export" }, (button) => {
       button.addEventListener("click", () => {
+        if (onAction) onAction();
         new MealPlanExportModal(this.app, this).open();
       });
     });
   }
-  renderShoppingControls(parent) {
+  renderShoppingControls(parent, onChangeEnd = null) {
     const dates = parent.createDiv({ cls: "mp-shopping-controls" });
     this.dateInput(dates, "From", this.shoppingFromDate, (value) => {
       this.shoppingFromDate = value;
-      this.render();
+      if (onChangeEnd) onChangeEnd();
+      else this.render();
     });
     this.dateInput(dates, "To", this.shoppingToDate, (value) => {
       this.shoppingToDate = value;
-      this.render();
+      if (onChangeEnd) onChangeEnd();
+      else this.render();
     });
     const label = dates.createEl("label", { cls: "mp-toggle" });
     const input = label.createEl("input", { attr: { type: "checkbox" } });
     input.checked = this.showPantryItems;
     input.addEventListener("change", () => {
       this.showPantryItems = input.checked;
-      this.render();
+      if (onChangeEnd) onChangeEnd();
+      else this.render();
     });
     label.createSpan({ text: "Pantry" });
   }
@@ -925,6 +1068,17 @@ var MealPlannerView = class extends import_obsidian2.ItemView {
     });
     const grid = calendar.createDiv({ cls: "mp-grid" });
     days.forEach((date) => this.renderDay(grid, date));
+  }
+  focusPendingDay() {
+    if (!this.pendingFocusDayKey) return;
+    const dayKey = this.pendingFocusDayKey;
+    this.pendingFocusDayKey = null;
+    window.requestAnimationFrame(() => {
+      const day = this.containerEl.querySelector(`.mp-day[data-day-key="${dayKey}"]`);
+      if (!(day instanceof HTMLElement)) return;
+      day.focus({ preventScroll: true });
+      day.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+    });
   }
   renderWeekHeader(parent) {
     const header = parent.createDiv({ cls: "mp-week-header" });
@@ -942,7 +1096,8 @@ var MealPlannerView = class extends import_obsidian2.ItemView {
         "mp-day",
         isOtherMonth && this.viewMode === "month" ? "mp-muted-day" : "",
         isToday ? "mp-today" : ""
-      ].filter(Boolean).join(" ")
+      ].filter(Boolean).join(" "),
+      attr: { "data-day-key": key, tabindex: "-1" }
     });
     this.entryDropTarget(day, key, null);
     const head = day.createDiv({ cls: "mp-day-head" });
@@ -1352,6 +1507,38 @@ var MealPlannerView = class extends import_obsidian2.ItemView {
     await this.plugin.saveSettings();
     await this.render();
   }
+  async createSampleMealPlan() {
+    try {
+      const recipeFolder = cleanFolderPath(this.plugin.settings.recipeFolder) || DEFAULT_SETTINGS.recipeFolder;
+      const ingredientsFolder = cleanFolderPath(this.plugin.settings.ingredientsFolder) || DEFAULT_SETTINGS.ingredientsFolder;
+      await ensureFolder(this.app, recipeFolder);
+      await ensureFolder(this.app, ingredientsFolder);
+      const recipePath = `${recipeFolder}/${SAMPLE_RECIPE_FILENAME}`;
+      if (!this.app.vault.getAbstractFileByPath(recipePath)) {
+        await this.app.vault.create(recipePath, sampleRecipeMarkdown());
+      }
+      for (const item of SAMPLE_INGREDIENT_METADATA) {
+        const ingredientPath = `${ingredientsFolder}/${safeFileName(item.name)}.md`;
+        if (!this.app.vault.getAbstractFileByPath(ingredientPath)) {
+          await this.app.vault.create(ingredientPath, sampleIngredientMarkdown(item));
+        }
+      }
+      const todayKey = formatDateKey(/* @__PURE__ */ new Date());
+      addSampleEntryToPlans(this.plugin.settings.plans, todayKey, recipePath);
+      await this.plugin.saveSettings();
+      this.cursorDate = startOfDay(/* @__PURE__ */ new Date());
+      this.primaryMode = "shopping";
+      this.viewMode = "week";
+      this.syncShoppingRangeToCalendar();
+      this.recipeCache = await this.loadRecipes();
+      await this.render();
+      new import_obsidian2.Notice(`Created sample meal plan with ${SAMPLE_RECIPE_NAME}.`);
+      return true;
+    } catch (error) {
+      new import_obsidian2.Notice(`Could not create sample meal plan: ${error?.message || String(error)}`);
+      return false;
+    }
+  }
   mealNamesFor(dayPlans) {
     const names = Object.keys(dayPlans);
     return names.sort((a, b) => {
@@ -1501,7 +1688,7 @@ var MealPlannerView = class extends import_obsidian2.ItemView {
     this.dragPayload = { dayKey, mealName, index };
     const payload = JSON.stringify(this.dragPayload);
     if (event.dataTransfer) {
-      event.dataTransfer.setData("application/x-meal-planner-entry", payload);
+      event.dataTransfer.setData("application/x-faanday-entry", payload);
       event.dataTransfer.setData("text/plain", payload);
       event.dataTransfer.effectAllowed = "move";
     }
@@ -1541,7 +1728,7 @@ var MealPlannerView = class extends import_obsidian2.ItemView {
   }
   draggedEntryPayload(event) {
     if (this.dragPayload) return this.dragPayload;
-    const raw = event.dataTransfer?.getData("application/x-meal-planner-entry") || event.dataTransfer?.getData("text/plain");
+    const raw = event.dataTransfer?.getData("application/x-faanday-entry") || event.dataTransfer?.getData("text/plain");
     if (!raw) return null;
     try {
       const payload = JSON.parse(raw);

@@ -1,8 +1,8 @@
-# Meal Planner Codex User Guide
+# FaanDay Codex User Guide
 
-Audience: users asking Codex to operate Meal Planner data.
+Audience: users asking Codex to operate FaanDay data.
 
-呢份文件係俾使用者交俾 Codex 參考，用嚟直接操作 Obsidian Meal Planner 插件資料。插件本身嘅開發規則喺 `AGENTS.md`；如果只係想排餐、加 recipe、整理 shopping list，跟呢份就夠。
+呢份文件係俾使用者交俾 Codex 參考，用嚟直接操作 Obsidian FaanDay 插件資料。插件本身嘅開發規則喺 `AGENTS.md`；如果只係想排餐、加 recipe、整理 shopping list，跟呢份就夠。
 
 ## 基本資料位置
 
@@ -19,7 +19,7 @@ Audience: users asking Codex to operate Meal Planner data.
 可以直接咁講：
 
 ```text
-幫我用 meal-planner 排下星期一至星期日晚餐，優先用已有 recipe，唔好覆蓋現有 breakfast/lunch。
+幫我用 faanday 排下星期一至星期日晚餐，優先用已有 recipe，唔好覆蓋現有 breakfast/lunch。
 ```
 
 ```text
@@ -186,7 +186,7 @@ Import 行為：
 
 ## Codex 操作守則
 
-叫 Codex 改 meal-planner 資料時，可以要求佢跟呢啲規則：
+叫 Codex 改 faanday 資料時，可以要求佢跟呢啲規則：
 
 - 先讀 `data.json`，確認 `recipeFolder`、`ingredientsFolder`、`defaultMeals`。
 - 改 meal plan 時只改 `data.json.plans` 相關日期，唔好重排全檔或改 unrelated settings。
@@ -199,8 +199,8 @@ Import 行為：
 
 喺 Obsidian 入面：
 
-- Command palette 執行 `Meal Planner: Open meal planner`。
-- Ribbon calendar icon 可以打開 Meal Planner view。
+- Command palette 執行 `FaanDay: Open FaanDay`。
+- Ribbon calendar icon 可以打開 FaanDay view。
 - Calendar / Shopping segmented control 切換日曆同購物清單。
 - Month / Week / Day 切換日曆範圍。
 - Recipe / Ingredients / Nutrition 切換每個 recipe card 顯示內容。

@@ -1,8 +1,8 @@
-# Meal Planner Codex User Guide
+# FaanDay Codex User Guide
 
-Audience: users asking Codex to operate Meal Planner data.
+Audience: users asking Codex to operate FaanDay data.
 
-This guide is for users who want Codex to operate Obsidian Meal Planner data directly. Plugin development instructions live in `AGENTS.md`; if you only want to plan meals, create recipes, update ingredients, or export shopping lists, use this guide.
+This guide is for users who want Codex to operate Obsidian FaanDay data directly. Plugin development instructions live in `AGENTS.md`; if you only want to plan meals, create recipes, update ingredients, or export shopping lists, use this guide.
 
 ## Data Locations
 
@@ -17,7 +17,7 @@ Important: if Codex is only planning meals, editing recipes, or updating ingredi
 ## Example Codex Requests
 
 ```text
-Use meal-planner to plan dinners from next Monday to Sunday. Prefer existing recipes and do not overwrite existing breakfast or lunch plans.
+Use faanday to plan dinners from next Monday to Sunday. Prefer existing recipes and do not overwrite existing breakfast or lunch plans.
 ```
 
 ```text
@@ -184,7 +184,7 @@ Import behavior:
 
 ## Codex Operating Rules
 
-When asking Codex to edit Meal Planner data, ask it to:
+When asking Codex to edit FaanDay data, ask it to:
 
 - Read `data.json` first to confirm `recipeFolder`, `ingredientsFolder`, and `defaultMeals`.
 - When changing meal plans, only edit the relevant dates in `data.json.plans`; do not rewrite unrelated settings.
@@ -197,8 +197,8 @@ When asking Codex to edit Meal Planner data, ask it to:
 
 In Obsidian:
 
-- Run `Meal Planner: Open meal planner` from the command palette.
-- Use the ribbon calendar icon to open Meal Planner.
+- Run `FaanDay: Open FaanDay` from the command palette.
+- Use the ribbon calendar icon to open FaanDay.
 - Switch between Calendar and Shopping with the segmented control.
 - Switch calendar ranges with Month / Week / Day.
 - Switch recipe card details with Recipe / Ingredients / Nutrition.

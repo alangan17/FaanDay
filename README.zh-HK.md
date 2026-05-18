@@ -1,10 +1,12 @@
-# Meal Planner
+# FaanDay
 
 廣東話 | [English](README.md)
 
-Meal Planner 幫你喺 Obsidian 入面用 Markdown 食譜做一星期煮飯計劃，再自動整合買餸清單。
+FaanDay 幫你喺 Obsidian 入面用 Markdown 食譜做一星期煮飯計劃，再自動整合買餸清單。
 
-Meal Planner 將一個 Markdown 食譜 folder 變成實用煮飯 workflow：
+![FaanDay preview](assets/faanday-preview.png)
+
+FaanDay 將一個 Markdown 食譜 folder 變成實用煮飯 workflow：
 
 - 將食譜加入 calendar，按早餐、午餐、晚餐，或者自訂 meal name 分類。
 - Planning 時切換 recipe、ingredients、nutrition view。
@@ -16,14 +18,14 @@ Meal Planner 將一個 Markdown 食譜 folder 變成實用煮飯 workflow：
 ## 快速開始
 
 1. 喺 recipe folder 建立食譜 note。預設 folder 係 `recipe`。
-2. 用 ribbon 或 command palette 開 Meal Planner。
+2. 用 ribbon 或 command palette 開 FaanDay。
 3. 揀一日，加一個 recipe，然後切去 Shopping 生成買餸清單。
 
 如果你已經有 Obsidian 食譜庫，先跟下面嘅食譜格式對齊 frontmatter 同 ingredients 寫法。如果由零開始，先整一個 dinner recipe，成功生成一次 shopping list，再慢慢補齊成個星期。
 
 ## 食譜格式
 
-Meal Planner 會由 frontmatter 讀食譜 metadata，並由 note body 讀食材份量。
+FaanDay 會由 frontmatter 讀食譜 metadata，並由 note body 讀食材份量。
 
 ```markdown
 ---
@@ -82,9 +84,9 @@ Pantry 支援以下 aliases：
 
 ## 買餸清單
 
-開 Meal Planner view，從 Calendar 切去 Shopping。揀 from date 同 to date，就可以將指定日期範圍內所有 planned recipes 嘅 ingredients 整合成買餸清單。
+開 FaanDay view，從 Calendar 切去 Shopping。揀 from date 同 to date，就可以將指定日期範圍內所有 planned recipes 嘅 ingredients 整合成買餸清單。
 
-Meal Planner 會按 category 分組、合併相同食材份量、顯示每樣食材來自邊幾個 recipes 同日子，亦可以隱藏 pantry staples。
+FaanDay 會按 category 分組、合併相同食材份量、顯示每樣食材來自邊幾個 recipes 同日子，亦可以隱藏 pantry staples。
 
 ## Import 同 export
 
@@ -106,7 +108,7 @@ Recipes 會用 exact name、path，或者 case-insensitive name 去 match。未 
 
 ## Using Codex
 
-你可以用 Codex 幫手操作 Meal Planner vault data。可以叫佢將粗略 meal ideas 變成有日期嘅 plan、按格式建立 recipe notes、補 ingredient metadata、整理 pantry categories，或者準備一份方便分享嘅 export text。
+你可以用 Codex 幫手操作 FaanDay vault data。可以叫佢將粗略 meal ideas 變成有日期嘅 plan、按格式建立 recipe notes、補 ingredient metadata、整理 pantry categories，或者準備一份方便分享嘅 export text。
 
 例子：
 
@@ -119,7 +121,7 @@ Recipes 會用 exact name、path，或者 case-insensitive name 去 match。未 
 
 ## Settings
 
-Meal Planner settings 可以設定：
+FaanDay settings 可以設定：
 
 - Recipe folder
 - Ingredients folder
@@ -134,7 +136,7 @@ Plugin 可以喺 Obsidian 入面檢查 GitHub 最新 stable release：
 
 1. 開 Settings。
 2. 去 Community plugins。
-3. 開 Meal Planner settings。
+3. 開 FaanDay settings。
 4. 喺 Stable release updates 揀 Check and install。
 
 呢個動作會由相應 `release/vX.Y.Z` branch 下載 `manifest.json`、`main.js`、`styles.css`。安裝後 reload Obsidian 就會完成 update。

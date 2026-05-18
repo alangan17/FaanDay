@@ -1,6 +1,6 @@
 import { requestUrl } from "obsidian";
 
-export const GITHUB_REPO = "alangan17/obsidian-meal-planner";
+export const GITHUB_REPO = "alangan17/FaanDay";
 export const RELEASE_FILES = ["manifest.json", "main.js", "styles.css"] as const;
 
 export async function fetchLatestRelease(): Promise<{ tag_name: string }> {
